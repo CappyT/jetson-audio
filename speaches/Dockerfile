@@ -5,7 +5,7 @@ ENV PIP_NO_CACHE_DIR=1 UV_NO_CACHE=1 UV_HTTP_TIMEOUT=300 \
     PIP_INDEX_URL=https://pypi.org/simple PIP_EXTRA_INDEX_URL= PIP_TRUSTED_HOST= \
     UV_INDEX_URL=https://pypi.org/simple UV_EXTRA_INDEX_URL=
 RUN set -ex \
- && apt-get update && apt-get install -y --no-install-recommends libportaudio2 && rm -rf /var/lib/apt/lists/* \
+ && apt-get update && apt-get install -y --no-install-recommends libportaudio2 ffmpeg && rm -rf /var/lib/apt/lists/* \
  && /opt/venv/bin/python -m pip install -q uv \
  && ORT_VER=$(/opt/venv/bin/python -c "import onnxruntime; print(onnxruntime.__version__)") \
  && CT2_VER=$(/opt/venv/bin/python -c "import ctranslate2; print(ctranslate2.__version__)") \
