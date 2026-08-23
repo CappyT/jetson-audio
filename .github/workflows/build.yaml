@@ -110,3 +110,20 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,scope=${{ matrix.image }},mode=max
+
+  # aggregate gate with a stable name for required status checks: the matrix
+  # job names vary per image and the build job may not run at all when no
+  # image directory is touched, so neither can be required directly
+  ci-ok:
+    needs: [changes, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: check results
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          BUILD: ${{ needs.build.result }}
+        run: |
+          set -euo pipefail
+          [ "$CHANGES" = "success" ]
+          case "$BUILD" in success|skipped) exit 0 ;; *) exit 1 ;; esac
