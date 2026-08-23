@@ -1,4 +1,6 @@
+# base image tags are not orderable by renovate, bump this line by hand
 FROM dustynv/speaches:r36.4.0-cu128-24.04
+# renovate: datasource=github-releases depName=speaches-ai/speaches versioning=semver
 ARG SPEACHES_REF=v0.9.0-rc.3
 COPY constraints-lock.txt /tmp/constraints-lock.txt
 ENV PIP_NO_CACHE_DIR=1 UV_NO_CACHE=1 UV_HTTP_TIMEOUT=300 \

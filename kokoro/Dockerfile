@@ -1,4 +1,6 @@
+# base image tags are not orderable by renovate, bump this line by hand
 FROM dustynv/kokoro-tts:fastapi-r36.4.0-cu128-24.04
+# renovate: datasource=github-releases depName=remsky/Kokoro-FastAPI versioning=semver
 ARG KOKORO_FASTAPI_REF=v0.8.0
 ENV PIP_NO_CACHE_DIR=1 UV_NO_CACHE=1 UV_HTTP_TIMEOUT=300 \
     PIP_INDEX_URL=https://pypi.org/simple PIP_EXTRA_INDEX_URL= PIP_TRUSTED_HOST= \

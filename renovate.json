@@ -1,0 +1,48 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "timezone": "Europe/Rome",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "renovate dependency dashboard",
+  "customManagers": [
+    {
+      "description": "track the upstream project pinned in each 'ARG *_REF=' line, driven by the '# renovate:' annotation above it",
+      "customType": "regex",
+      "managerFilePatterns": ["**/Dockerfile"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+ARG \\w+_REF=(?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "workflow actions are low risk, group them into one pr and automerge patch/minor after a short soak; majors stay manual",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "github actions",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "an upstream ref bump rebuilds the whole image and can break at runtime on the jetson, so keep one manual-merge pr per project",
+      "matchManagers": ["custom.regex"],
+      "groupName": null,
+      "automerge": false,
+      "addLabels": ["upstream"]
+    },
+    {
+      "description": "speaches ships long-lived release candidates and the pin is deliberately ahead of the latest stable (v0.8.3), so unstable versions must stay eligible; renovate never opens downgrade prs (rollbackPrs is off by default), so the older stable cannot win",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["speaches-ai/speaches"],
+      "ignoreUnstable": false,
+      "respectLatest": false
+    },
+    {
+      "description": "the dustynv base images use a non-semver l4t tag scheme (fastapi-r36.4.0-cu128-24.04) that renovate cannot order, so bumps stay manual",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["dustynv/**"],
+      "enabled": false
+    }
+  ]
+}
