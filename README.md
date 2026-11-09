@@ -11,7 +11,7 @@ Why not the upstream images: their `linux/arm64` variants ship CPU-only `ctransl
 
 ## Build
 
-Each directory has a `Dockerfile` with an `*_REF` build arg pinning the upstream git tag. Images are built natively on `ubuntu-24.04-arm` runners (no GPU needed to build; GPU correctness is verified on the device).
+Each directory has a `Dockerfile` with an `*_REF` build arg pinning the upstream git tag. Images are built natively on `ubuntu-26.04-arm` runners (no GPU needed to build; GPU correctness is verified on the device).
 
 ```bash
 docker build --network host -t jetson-speaches speaches/
