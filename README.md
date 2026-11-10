@@ -1,11 +1,12 @@
 # jetson-audio
 
-OpenAI-compatible speech containers for NVIDIA Jetson (JetPack 6.x, L4T r36.4, CUDA 12.x, GPU sm_87), built on top of the `dustynv/*` prebuilt images from jetson-containers so that the CUDA builds of ctranslate2, onnxruntime and torch are reused instead of compiled.
+OpenAI-compatible speech containers, plus the Hindsight decision model, for NVIDIA Jetson (JetPack 6.x, L4T r36.4, CUDA 12.x, GPU sm_87), built on top of the `dustynv/*` prebuilt images from jetson-containers so that the CUDA builds of ctranslate2, onnxruntime and torch are reused instead of compiled.
 
 | Image | Upstream | Port | Purpose |
 |---|---|---|---|
 | `ghcr.io/cappyt/jetson-speaches` | [speaches-ai/speaches](https://github.com/speaches-ai/speaches) | 8000 | STT (`/v1/audio/transcriptions`, faster-whisper on GPU) and TTS (`/v1/audio/speech`, Kokoro ONNX) |
 | `ghcr.io/cappyt/jetson-kokoro` | [remsky/Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI) | 8880 | TTS (`/v1/audio/speech`, Kokoro v1.0 on GPU via PyTorch, native opus) |
+| `ghcr.io/cappyt/jetson-hs-decide` | [hindsight-ai/hs-decide-1-flash](https://huggingface.co/hindsight-ai/hs-decide-1-flash) | 8010 | Hindsight decision model (`/v1/systemone`, Transformers with flash-linear-attention kernels) |
 
 Why not the upstream images: their `linux/arm64` variants ship CPU-only `ctranslate2` / `onnxruntime` wheels and PyTorch SBSA wheels without sm_87 kernels, so they run without the GPU on Jetson.
 
@@ -16,11 +17,12 @@ Each directory has a `Dockerfile` with an `*_REF` build arg pinning the upstream
 ```bash
 docker build --network host -t jetson-speaches speaches/
 docker build --network host -t jetson-kokoro kokoro/
+docker build --network host -t jetson-hs-decide hs-decide/
 ```
 
 `--network host` works around the Docker bridge DNS on the Jetson host.
 
-CI builds an image only when its own directory changes (a change to the workflow, a tag push or a manual run rebuilds both). Pull requests build without pushing, so an update that no longer compiles fails before it reaches `main`.
+CI builds an image only when its own directory changes (a change to the workflow, a tag push or a manual run rebuilds all of them). Pull requests build without pushing, so an update that no longer compiles fails before it reaches `main`.
 
 ### Tags
 
@@ -35,6 +37,7 @@ CI builds an image only when its own directory changes (a change to the workflow
 Renovate opens the pull requests, driven by `renovate.json`:
 
 - **Upstream refs** — the `# renovate:` annotation above each `ARG *_REF=` line tracks GitHub releases of the upstream project. These PRs are merged by hand, since a new upstream tag can break the image at runtime on the device. Speaches is deliberately pinned to a release candidate ahead of the latest stable, so unstable versions stay eligible for it.
+- **hs-decide** — `HS_DECIDE_REF` is a Hugging Face commit of the model repo, which Renovate cannot track: bump it by hand.
 - **Workflow actions** — grouped into one PR and automerged for patch/minor after a three-day soak; majors are manual.
 - **`dustynv/*` base images** — *not* tracked. Their L4T tag scheme (`fastapi-r36.4.0-cu128-24.04`) is not orderable, so Renovate cannot tell which tag is newer; bump the `FROM` lines by hand when jetson-containers publishes a new JetPack/CUDA build.
 
@@ -43,6 +46,9 @@ Renovate opens the pull requests, driven by `renovate.json`:
 ```bash
 docker run -d --runtime nvidia -p 8000:8000 -v speaches-hf:/data/models/huggingface ghcr.io/cappyt/jetson-speaches:latest
 docker run -d --runtime nvidia -p 8880:8880 ghcr.io/cappyt/jetson-kokoro:latest
+docker run -d --runtime nvidia -p 8010:8010 -e HS_DECIDE_API_KEY=... -v hs-decide-triton:/cache/triton ghcr.io/cappyt/jetson-hs-decide:latest
 ```
 
 Model cache for speaches lives in `/data/models/huggingface`; download models with `POST /v1/models/<model_id>` (e.g. `deepdml/faster-whisper-large-v3-turbo-ct2`, `speaches-ai/Kokoro-82M-v1.0-ONNX`).
+
+The hs-decide model is in the image. Triton autotunes the fla kernels once per input size bucket (10-50 s on the first request of that size): keep `/cache/triton` on a volume so restarts reuse the results.

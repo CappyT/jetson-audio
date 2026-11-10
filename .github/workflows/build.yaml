@@ -34,12 +34,14 @@ jobs:
               - 'kokoro/**'
             speaches:
               - 'speaches/**'
+            hs-decide:
+              - 'hs-decide/**'
             workflow:
               - '.github/workflows/build.yaml'
       - name: select images to build
         id: select
         env:
-          ALL_IMAGES: '["kokoro","speaches"]'
+          ALL_IMAGES: '["kokoro","speaches","hs-decide"]'
           CHANGED: ${{ steps.filter.outputs.changes }}
           EVENT: ${{ github.event_name }}
           REF_TYPE: ${{ github.ref_type }}
